@@ -34,6 +34,8 @@ public static class GetUser
         public async Task<UserDto> Handle(GetUserQuery request, CancellationToken cancellationToken)
         {
             var user = await repository.GetById(request.Id);
+            // var altUser = await repository
+            //     .QueryBySpecification(new GetUserSpecification(x => x.Id == request.Id), cancellationToken);
             return user.Adapt<UserDto>();
         }
     }
