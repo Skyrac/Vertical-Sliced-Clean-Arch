@@ -1,0 +1,29 @@
+﻿version: '3.9'
+
+services:
+  api:
+    image: api
+    build:
+      context: .
+      dockerfile: Api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=postgresDB;Username=postgresUser;Password=postgresPW
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: myPostgresDb
+    ports:
+      - "5455:5432"
+    environment:
+      POSTGRES_USER: postgresUser
+      POSTGRES_PASSWORD: postgresPW
+      POSTGRES_DB: postgresDB
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

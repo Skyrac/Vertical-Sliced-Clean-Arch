@@ -1,0 +1,6 @@
+@Clean_Vertical_Sliced_Architecture_HostAddress = http://localhost:5019
+
+GET {{Clean_Vertical_Sliced_Architecture_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
