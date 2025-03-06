@@ -9,7 +9,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=postgresDB;Username=postgresUser;Password=postgresPW
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5455;Database=postgresDB;Username=postgresUser;Password=postgresPW
     depends_on:
       - postgres
 

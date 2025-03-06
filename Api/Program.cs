@@ -1,5 +1,7 @@
 using Application;
+using Application.Extensions;
 using Carter;
+using Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,12 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCarter();
+builder.Services.AddInfrastructureRegistration(builder.Configuration);
 
-builder.Services.AddMediatR(
-    config => config.RegisterServicesFromAssemblies(
-        typeof(ApplicationRegistrationExtensions).Assembly
-    ));
+builder.Services.AddCarter();
 
 var app = builder.Build();
 
