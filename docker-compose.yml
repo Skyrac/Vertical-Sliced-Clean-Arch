@@ -2,15 +2,22 @@
 
 services:
   api:
-    image: ghcr.io/ger-sportnest/sportnest-backend:latest
+    image: ghcr.io/skyrac/backend:latest
     ports:
       - "8080:8080"
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=postgresDB;Username=postgresUser;Password=postgresPW
     depends_on:
       - postgres
+      - dashboard
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+        
+  dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    ports:
+      - "18888:18888"
+      - "4317:18889"
 
   watchtower:
     image: containrrr/watchtower
