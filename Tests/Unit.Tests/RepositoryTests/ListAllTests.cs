@@ -2,56 +2,91 @@ using Application.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Unit.Tests.RepositoryTests.Base;
 using Unit.Tests.RepositoryTests.Entities.UserDb;
-using Xunit.Abstractions;
 
 namespace Unit.Tests.RepositoryTests;
 
-[Trait("category", "automation_unit_tests")]
-[Trait("category", "repository_unit_tests")]
-[Collection(nameof(PostgreSqlRepositoryTestCollection))]
-public class ListAllTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestOutputHelper outputHelper) 
-    : RepositoryTestBase(nameof(ListAllTests), fixture, outputHelper)
+[Trait("category", ServiceTestCategories.UnitTests)]
+[Trait("category", ServiceTestCategories.RepositoryTests)]
+public class ListAllTests(
+    PostgreSqlRepositoryTestDatabaseFixture fixture,
+    ITestOutputHelper outputHelper,
+    string? prefix = "T",
+    Guid? dbId = null
+) : RepositoryTestBase(fixture, outputHelper, prefix, dbId)
 {
     [Fact]
     public async Task ListAll_WithSelector_ReturnsProjectedResult_Success()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
         await userRepository.Add(user1);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var result = await userRepository.ListAll(u => u.Firstname);
+        var result = await userRepository.ListAll(
+            x => x.Firstname,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         Assert.Single(result);
         Assert.Contains("Anna", result);
     }
-    
+
     [Fact]
     public async Task ListAll_WithoutPredicate_ReturnsAllEntities()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
-        var user2 = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Müller" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Müller",
+        };
         await userRepository.Add(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var result = await userRepository.ListAll();
+        var result = await userRepository.ListAll(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(2, result.Count);
-        Assert.Contains(result, u => u.Firstname == "Anna");
-        Assert.Contains(result, u => u.Firstname == "Max");
+        Assert.Contains(result, x => x.Firstname == "Anna");
+        Assert.Contains(result, x => x.Firstname == "Max");
     }
 
     [Fact]
     public async Task ListAll_WithPredicate_ReturnsFilteredEntities()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
-        var user2 = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Müller" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Müller",
+        };
         await userRepository.Add(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var result = await userRepository.ListAll(u => u.Firstname == "Anna", default);
+        var result = await userRepository.ListAll(
+            x => x.Firstname == "Anna",
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Single(result);
         Assert.Equal("Anna", result.First().Firstname);
@@ -61,12 +96,26 @@ public class ListAllTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITest
     public async Task ListAll_WithSelectorAndPredicate_ReturnsProjectedFilteredResults()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
-        var user2 = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Müller" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Müller",
+        };
         await userRepository.Add(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var result = await userRepository.ListAll(u => u.Firstname, u => u.Firstname == "Anna");
+        var result = await userRepository.ListAll(
+            x => x.Firstname,
+            x => x.Firstname == "Anna",
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Single(result);
         Assert.Equal("Anna", result.First());
@@ -77,7 +126,9 @@ public class ListAllTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITest
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
 
-        var result = await userRepository.ListAll();
+        var result = await userRepository.ListAll(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         Assert.Empty(result);
     }
@@ -87,7 +138,10 @@ public class ListAllTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITest
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
 
-        var result = await userRepository.ListAll(u => u.Firstname);
+        var result = await userRepository.ListAll(
+            x => x.Firstname,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         Assert.Empty(result);
     }

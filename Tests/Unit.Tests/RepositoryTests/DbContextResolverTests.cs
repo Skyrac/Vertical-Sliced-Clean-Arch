@@ -6,7 +6,14 @@ using Unit.Tests.RepositoryTests.Entities.EmployeeDb;
 
 namespace Unit.Tests.RepositoryTests;
 
-public class DbContextResolverTests
+[Trait("category", ServiceTestCategories.UnitTests)]
+[Trait("category", ServiceTestCategories.RepositoryTests)]
+public class DbContextResolverTests(
+    PostgreSqlRepositoryTestDatabaseFixture fixture,
+    ITestOutputHelper outputHelper,
+    string? prefix = "T",
+    Guid? dbId = null
+) : RepositoryTestBase(fixture, outputHelper, prefix, dbId)
 {
     [Fact]
     public void Resolve_UserEntity_ReturnsUserTestDbContext()
@@ -22,8 +29,12 @@ public class DbContextResolverTests
         var userContext = new UserTestDbContext(userOptions);
         var employeeContext = new EmployeeTestDbContext(employeeOptions);
 
-        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<UserTestDbContext>(userContext));
-        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<EmployeeTestDbContext>(employeeContext));
+        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<UserTestDbContext>(
+            userContext
+        ));
+        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<EmployeeTestDbContext>(
+            employeeContext
+        ));
         var provider = services.BuildServiceProvider();
 
         var resolver = new DbContextResolver(provider.GetServices<IDbContextFactory>());
@@ -47,8 +58,12 @@ public class DbContextResolverTests
         var userContext = new UserTestDbContext(userOptions);
         var employeeContext = new EmployeeTestDbContext(employeeOptions);
 
-        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<UserTestDbContext>(userContext));
-        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<EmployeeTestDbContext>(employeeContext));
+        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<UserTestDbContext>(
+            userContext
+        ));
+        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<EmployeeTestDbContext>(
+            employeeContext
+        ));
         var provider = services.BuildServiceProvider();
 
         var resolver = new DbContextResolver(provider.GetServices<IDbContextFactory>());
@@ -68,7 +83,9 @@ public class DbContextResolverTests
 
         var userContext = new UserTestDbContext(userOptions);
 
-        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<UserTestDbContext>(userContext));
+        services.AddScoped<IDbContextFactory>(_ => new DbContextFactory<UserTestDbContext>(
+            userContext
+        ));
         var provider = services.BuildServiceProvider();
 
         var resolver = new DbContextResolver(provider.GetServices<IDbContextFactory>());

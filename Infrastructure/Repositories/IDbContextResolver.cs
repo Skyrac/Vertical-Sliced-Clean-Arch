@@ -26,6 +26,8 @@ public class DbContextResolver : IDbContextResolver
                 return context;
         }
 
-        throw new InvalidOperationException($"Kein passender DbContext für {typeof(TEntity).Name} gefunden.");
+        throw new InvalidOperationException(
+            $"Kein passender DbContext für {typeof(TEntity).Name} gefunden."
+        );
     }
 }

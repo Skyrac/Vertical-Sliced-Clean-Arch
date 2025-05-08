@@ -2,35 +2,53 @@ using Application.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Unit.Tests.RepositoryTests.Base;
 using Unit.Tests.RepositoryTests.Entities.UserDb;
-using Xunit.Abstractions;
 
 namespace Unit.Tests.RepositoryTests;
 
-[Trait("category", "automation_unit_tests")]
-[Trait("category", "repository_unit_tests")]
-[Collection(nameof(PostgreSqlRepositoryTestCollection))]
-public class CountTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestOutputHelper outputHelper) 
-    : RepositoryTestBase(nameof(CountTests), fixture, outputHelper)
+[Trait("category", ServiceTestCategories.UnitTests)]
+[Trait("category", ServiceTestCategories.RepositoryTests)]
+public class CountTests(
+    PostgreSqlRepositoryTestDatabaseFixture fixture,
+    ITestOutputHelper outputHelper,
+    string? prefix = "CountTests",
+    Guid? dbId = null
+) : RepositoryTestBase(fixture, outputHelper, prefix, dbId)
 {
     [Fact]
     public async Task Count_ReturnsCorrectCount_Success()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
-        var user2 = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Müller" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Müller",
+        };
         await userRepository.Add(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var count = await userRepository.Count(u => u.Firstname.Contains("a"));
+        var count = await userRepository.Count(
+            x => x.Firstname!.Contains("a"),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         Assert.Equal(2, count);
     }
-    
+
     [Fact]
     public async Task Count_WithEmptyDatabase_ReturnsZero()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
 
-        var count = await userRepository.Count(_ => true);
+        var count = await userRepository.Count(
+            _ => true,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         Assert.Equal(0, count);
     }
 
@@ -38,11 +56,19 @@ public class CountTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestOu
     public async Task Count_WithPredicateThatMatchesNothing_ReturnsZero()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
         await userRepository.Add(user1);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var count = await userRepository.Count(u => u.Firstname == "Unbekannt");
+        var count = await userRepository.Count(
+            x => x.Firstname == "Unbekannt",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         Assert.Equal(0, count);
     }
 
@@ -50,12 +76,25 @@ public class CountTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestOu
     public async Task Count_WithoutPredicate_ReturnsTotalCount()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
-        var user2 = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Müller" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Müller",
+        };
         await userRepository.Add(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var count = await userRepository.Count(null);
+        var count = await userRepository.Count(
+            null,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         Assert.Equal(2, count);
     }
 
@@ -63,13 +102,27 @@ public class CountTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestOu
     public async Task Count_WithSelector_ReturnsCountBasedOnProjection()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Smith" };
-        var user2 = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Müller" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Smith",
+        };
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Müller",
+        };
         await userRepository.Add(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
         // Hier wird die Projektion auf den Nachnamen gemacht, sollte die gleiche Anzahl liefern
-        var count = await userRepository.Count(_ => true, u => u.Lastname);
+        var count = await userRepository.Count(
+            _ => true,
+            x => x.Lastname!,
+            TestContext.Current.CancellationToken
+        );
         Assert.Equal(2, count);
     }
 }

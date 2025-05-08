@@ -8,7 +8,7 @@ public interface IDbContextFactory
 }
 
 public class DbContextFactory<TDbContext>(TDbContext context) : IDbContextFactory
-where TDbContext : DbContext
+    where TDbContext : DbContext
 {
     public DbContext GetDbContext()
     {

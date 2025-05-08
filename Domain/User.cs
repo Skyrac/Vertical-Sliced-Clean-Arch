@@ -1,8 +1,15 @@
-﻿namespace Domain;
+﻿using NpgsqlTypes;
 
-public class User
+namespace Domain;
+
+/// <summary>
+/// Represents a user/member in the system.
+/// </summary>
+public class User : TrackedEntity
 {
-    public required Guid Id { get; set; }
-    public required string Firstname { get; set; }
-    public required string Lastname { get; set; }
+    public long Id { get; set; }
+    public required string DisplayName { get; set; }
+    public string? Email { get; set; }
+    public string? PhoneNumber { get; set; }
+    public NpgsqlTsVector DisplayNameSearchVector { get; set; } = null!;
 }

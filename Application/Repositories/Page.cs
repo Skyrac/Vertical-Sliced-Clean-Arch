@@ -9,7 +9,14 @@ public class Page<T>
     public int TotalItems { get; }
     public IReadOnlyCollection<T> Items { get; }
 
-    public Page(int currentPage, int nextPage, int totalPages, int pageSize, int totalItems, IReadOnlyCollection<T> items)
+    public Page(
+        int currentPage,
+        int nextPage,
+        int totalPages,
+        int pageSize,
+        int totalItems,
+        IReadOnlyCollection<T> items
+    )
     {
         CurrentPage = currentPage;
         NextPage = nextPage;
@@ -18,4 +25,4 @@ public class Page<T>
         TotalItems = totalItems;
         Items = items;
     }
-} 
+}

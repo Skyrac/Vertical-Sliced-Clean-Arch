@@ -1,29 +1,24 @@
+using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Unit.Tests.RepositoryTests.Entities.UserDb;
 
 namespace Unit.Tests.RepositoryTests.Base;
 
-public class UserTestDbContext : DbContext
+public class UserTestDbContext : DbBaseContext
 {
-    public UserTestDbContext(DbContextOptions<UserTestDbContext> options) : base(options)
-    {
-    }
+    public UserTestDbContext(DbContextOptions<UserTestDbContext> options, string schema = "public")
+        : base(options, schema) { }
 
-    protected UserTestDbContext(DbContextOptions options) : base(options)
-    {
-    }
-    
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseSnakeCaseNamingConvention();
         base.OnConfiguring(optionsBuilder);
     }
-    
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultSchema("user_test");
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new OrderConfiguration());
+        base.OnModelCreating(modelBuilder);
     }
 }

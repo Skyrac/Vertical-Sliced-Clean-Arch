@@ -1,63 +1,40 @@
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace Unit.Tests.RepositoryTests.Base;
-public class RepositoryTestBase : IDisposable, IAsyncDisposable
+
+public class RepositoryTestBase : PostgreSqlTestBase<UserTestDbContext>
 {
-    public ServiceProvider ServiceProvider { get; private set; }
-    private readonly PostgreSqlRepositoryTestDatabaseFixture _fixture;
-    public RepositoryTestBase(string name, PostgreSqlRepositoryTestDatabaseFixture fixture, ITestOutputHelper output)
+    public RepositoryTestBase(
+        PostgreSqlRepositoryTestDatabaseFixture fixture,
+        ITestOutputHelper outputHelper,
+        string? prefix = "T",
+        Guid? dbId = null
+    )
+        : base(fixture, outputHelper, prefix, dbId)
     {
-        _fixture = fixture;
-        var serviceCollection = new ServiceCollection();
-        var connectionString = fixture.Container.GetConnectionString()
-            .Replace(PostgreSqlRepositoryTestDatabaseFixture.DefaultDbName, name);
-        
-        serviceCollection.AddDbContext<UserTestDbContext>(options =>
-        {       
-            options.UseNpgsql(connectionString);
-            options.LogTo(output.WriteLine, LogLevel.Information);
-        });
-        
-        serviceCollection.AddDbContext<EmployeeTestDbContext>(options =>
-        {       
-            options.UseNpgsql(connectionString);
-            options.LogTo(output.WriteLine, LogLevel.Information);        
-        });
+        Services.RegisterTestDbContext<EmployeeTestDbContext>(fixture, prefix, dbId);
+    }
 
-        serviceCollection.AddRepositories<UserTestDbContext>();
-        serviceCollection.AddRepositories<EmployeeTestDbContext>();
-        ServiceProvider = serviceCollection.BuildServiceProvider();
+    protected override async Task BuildServiceProvider(bool useMigrate = true)
+    {
+        ServiceProvider = Services.BuildServiceProvider();
 
-        var dbContextFactories = ServiceProvider.GetServices<IDbContextFactory>();
+        using var scope = ServiceProvider.CreateScope();
+        var dbContextFactories = scope.ServiceProvider.GetServices<IDbContextFactory>();
 
-        foreach (var contextFactory in dbContextFactories)
+        foreach (var factory in dbContextFactories)
         {
-            var context = contextFactory.GetDbContext();
+            await using var context = factory.GetDbContext();
+            try
+            {
+                var createScript = context.Database.GenerateCreateScript();
+                await context.Database.ExecuteSqlRawAsync(createScript);
+            }
+            catch { }
 
-            var schema = context.Model.GetDefaultSchema() ?? "public";
-
-            // Alle Tabellen im Schema droppen (alternativ auch nur das Schema droppen)
-            context.Database.ExecuteSqlRaw($"DROP SCHEMA IF EXISTS {schema} CASCADE;");
-            context.Database.ExecuteSqlRaw($"CREATE SCHEMA {schema};");
-
-            // EnsureCreated erstellt die Tabellen in dem neuen Schema
-            context.Database.ExecuteSqlRaw(context.Database.GenerateCreateScript());
+            await ClearDatabase(factory);
         }
-
-    }
-
-    public void Dispose()
-    {
-        ServiceProvider.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await ServiceProvider.DisposeAsync();
-        await _fixture.DisposeAsync();
     }
 }

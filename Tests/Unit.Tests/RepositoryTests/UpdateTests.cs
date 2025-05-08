@@ -2,75 +2,116 @@ using Application.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Unit.Tests.RepositoryTests.Base;
 using Unit.Tests.RepositoryTests.Entities.UserDb;
-using Xunit.Abstractions;
 
 namespace Unit.Tests.RepositoryTests;
 
-[Trait("category", "automation_unit_tests")]
-[Trait("category", "repository_unit_tests")]
-[Collection(nameof(PostgreSqlRepositoryTestCollection))]
-public class UpdateTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestOutputHelper outputHelper) 
-    : RepositoryTestBase(nameof(UpdateTests), fixture, outputHelper)
+[Trait("category", ServiceTestCategories.UnitTests)]
+[Trait("category", ServiceTestCategories.RepositoryTests)]
+public class UpdateTests(
+    PostgreSqlRepositoryTestDatabaseFixture fixture,
+    ITestOutputHelper outputHelper,
+    string? prefix = "T",
+    Guid? dbId = null
+) : RepositoryTestBase(fixture, outputHelper, prefix, dbId)
 {
     [Fact]
     public async Task Update_EntityUpdated_Success()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Mustermann" };
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Mustermann",
+        };
         await userRepository.Add(user);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
         user.Firstname = "Maximilian";
         userRepository.Update(user);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
         var updatedUser = await userRepository.GetById(user.Id);
+        Assert.NotNull(updatedUser);
         Assert.Equal("Maximilian", updatedUser.Firstname);
     }
-    
+
     [Fact]
     public async Task Update_Expression_BulkUpdate_Success()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
         await userRepository.Add(
-            new User { Id = Guid.NewGuid(), Firstname = "Test1", Lastname = "Alt" },
-            new User { Id = Guid.NewGuid(), Firstname = "Test2", Lastname = "Alt" }
+            new User
+            {
+                Id = Guid.NewGuid(),
+                Firstname = "Test1",
+                Lastname = "Alt",
+            },
+            new User
+            {
+                Id = Guid.NewGuid(),
+                Firstname = "Test2",
+                Lastname = "Alt",
+            }
         );
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        await userRepository.Update(u => u.SetProperty(x => x.Lastname, "Neu"), u => u.Lastname == "Alt");
-        await userRepository.SaveChanges();
+        await userRepository.Update(
+            propertyCalls => propertyCalls.SetProperty(x => x.Lastname, "Neu"),
+            x => x.Lastname == "Alt",
+            TestContext.Current.CancellationToken
+        );
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var result = await userRepository.ListAll();
+        var result = await userRepository.ListAll(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         Assert.All(result, u => Assert.Equal("Neu", u.Lastname));
     }
-    
+
     [Fact]
     public async Task Update_MultipleEntities_EntitiesUpdated_Success()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user1 = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Mustermann" };
-        var user2 = new User { Id = Guid.NewGuid(), Firstname = "Anna", Lastname = "Schmidt" };
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Mustermann",
+        };
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Anna",
+            Lastname = "Schmidt",
+        };
 
         await userRepository.Add(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
         user1.Firstname = "Maximilian";
         user2.Lastname = "Müller";
 
         userRepository.Update(user1, user2);
-        await userRepository.SaveChanges();
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
-        var updatedUsers = await userRepository.ListAll();
-        Assert.Contains(updatedUsers, u => u.Id == user1.Id && u.Firstname == "Maximilian");
-        Assert.Contains(updatedUsers, u => u.Id == user2.Id && u.Lastname == "Müller");
+        var updatedUsers = await userRepository.ListAll(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Assert.Contains(updatedUsers, x => x.Id == user1.Id && x.Firstname == "Maximilian");
+        Assert.Contains(updatedUsers, x => x.Id == user2.Id && x.Lastname == "Müller");
     }
 
     [Fact]
-    public async Task Update_EntityNotTracked_ThrowsInvalidOperationException()
+    public void Update_EntityNotTracked_ThrowsInvalidOperationException()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        var user = new User { Id = Guid.NewGuid(), Firstname = "Max", Lastname = "Mustermann" };
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Firstname = "Max",
+            Lastname = "Mustermann",
+        };
 
         // Benutzer wird nie hinzugefügt -> nicht getrackt
 
@@ -87,15 +128,25 @@ public class UpdateTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestO
     public async Task Update_Expression_NoMatch_DoesNothing()
     {
         var userRepository = ServiceProvider.GetRequiredService<IRepository<User>>();
-        await userRepository.Add(new User { Id = Guid.NewGuid(), Firstname = "Test", Lastname = "Alt" });
-        await userRepository.SaveChanges();
+        await userRepository.Add(
+            new User
+            {
+                Id = Guid.NewGuid(),
+                Firstname = "Test",
+                Lastname = "Alt",
+            }
+        );
+        await userRepository.SaveChanges(TestContext.Current.CancellationToken);
 
         await userRepository.Update(
-            u => u.SetProperty(x => x.Lastname, "Neu"),
-            u => u.Firstname == "NichtVorhanden"
+            propertyCalls => propertyCalls.SetProperty(x => x.Lastname, "Neu"),
+            x => x.Firstname == "NichtVorhanden",
+            TestContext.Current.CancellationToken
         );
 
-        var result = await userRepository.ListAll();
+        var result = await userRepository.ListAll(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         Assert.All(result, u => Assert.Equal("Alt", u.Lastname));
     }
 
@@ -106,7 +157,11 @@ public class UpdateTests(PostgreSqlRepositoryTestDatabaseFixture fixture, ITestO
 
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await userRepository.Update(null!, u => u.Lastname == "Alt");
+            await userRepository.Update(
+                null!,
+                x => x.Lastname == "Alt",
+                TestContext.Current.CancellationToken
+            );
         });
     }
 }
